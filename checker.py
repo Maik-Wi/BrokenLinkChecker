@@ -23,7 +23,7 @@ def get_links_from_sitemap(sitemap_url):
         print("An error occurred:", str(e))
         return None
 
-def get_article_links(url, sitemap_domain):
+def get_article_links(url, sitemap_domain, checked_urls):
     try:
         print("Fetching article links from:", url)
         response = requests.get(url)
@@ -35,7 +35,9 @@ def get_article_links(url, sitemap_domain):
                 if href and href.startswith("http"):
                     parsed_href = urlparse(href)
                     if parsed_href.netloc.split('.')[-2:] != sitemap_domain.split('.')[-2:]:
-                        article_links.append(href)
+                        if href not in checked_urls:
+                            article_links.append(href)
+                            checked_urls.add(href)
             print("Article links fetched successfully.")
             return article_links
         else:
@@ -72,9 +74,10 @@ def main(sitemap_url):
     links = get_links_from_sitemap(sitemap_url)
     if links:
         sitemap_domain = urlparse(sitemap_url).netloc
+        checked_urls = set()
         article_links = []
         for link in links:
-            article_links.extend(get_article_links(link, sitemap_domain))
+            article_links.extend(get_article_links(link, sitemap_domain, checked_urls))
         if article_links:
             broken_links = check_links(article_links)
             if broken_links:
@@ -90,3 +93,4 @@ def main(sitemap_url):
 if __name__ == "__main__":
     sitemap_url = input("Please enter the URL of the sitemap.xml: ")
     main(sitemap_url)
+
