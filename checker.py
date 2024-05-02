@@ -1,7 +1,7 @@
 import requests
 import xml.etree.ElementTree as ET
 from bs4 import BeautifulSoup
-from urllib.parse import urljoin
+from urllib.parse import urlparse
 
 def get_links_from_sitemap(sitemap_url):
     try:
@@ -23,7 +23,7 @@ def get_links_from_sitemap(sitemap_url):
         print("An error occurred:", str(e))
         return None
 
-def get_article_links(url):
+def get_article_links(url, sitemap_domain):
     try:
         print("Fetching article links from:", url)
         response = requests.get(url)
@@ -33,7 +33,9 @@ def get_article_links(url):
             for link in soup.find_all('a'):
                 href = link.get('href')
                 if href and href.startswith("http"):
-                    article_links.append(href)
+                    parsed_href = urlparse(href)
+                    if parsed_href.netloc.split('.')[-2:] != sitemap_domain.split('.')[-2:]:
+                        article_links.append(href)
             print("Article links fetched successfully.")
             return article_links
         else:
@@ -69,9 +71,10 @@ def write_to_log(broken_links):
 def main(sitemap_url):
     links = get_links_from_sitemap(sitemap_url)
     if links:
+        sitemap_domain = urlparse(sitemap_url).netloc
         article_links = []
         for link in links:
-            article_links.extend(get_article_links(link))
+            article_links.extend(get_article_links(link, sitemap_domain))
         if article_links:
             broken_links = check_links(article_links)
             if broken_links:
